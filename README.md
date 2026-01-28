@@ -13,7 +13,8 @@ $$
 \begin{aligned}
 \exp \left( \frac{q^\top k}{c} \right)
 & = 1 + \frac{q^\top k}{c} + \frac{1}{2!} \left( \frac{q^\top k}{c} \right)^2 + \frac{1}{3!} \left( \frac{q^\top k}{c} \right)^3 + \dots \\
-& = \sum_{p=0}^{\infty} \, \alpha_p \, (q^\top k)^p, \qquad \alpha_p := \frac{1}{p!\, c^p} \\
+\\
+& = \sum_{p=0}^{\infty}  \alpha_p  (q^\top k)^p, \qquad \alpha_p := \frac{1}{p! c^p} \\
 \end{aligned}
 $$
 
@@ -23,8 +24,11 @@ $$
 \begin{aligned}
 (q^\top k)^3
 & = \sum_{i_1=1}^{d_K} q_{i_1} k_{i_1} \sum_{i_2=1}^{d_K} q_{i_2} k_{i_2} \sum_{i_3=1}^{d_K} q_{i_3} k_{i_3} \\
+\\
 & = \sum_{i_1=1}^{d_K} \sum_{i_2=1}^{d_K} \sum_{i_3=1}^{d_K} (q_{i_1} q_{i_2} q_{i_3}) (k_{i_1} k_{i_2} k_{i_3}) \\
+\\
 & = \sum  (q \otimes q \otimes q) \odot (k \otimes k \otimes k) \\
+\\
 & = \sum \left( q^{\otimes 3} \right) \odot \left( k^{\otimes 3} \right)
 \end{aligned}
 $$
