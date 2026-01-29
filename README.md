@@ -22,7 +22,7 @@ Previous efforts to approximate attention via Taylor expansion have stopped at t
 
 $$\left( q^\top k \right)^p = \sum \left( q^{\otimes p} \right) \odot \left( k^{\otimes p} \right)$$
 
-For example, if $p = 3$, we have $\left( q^\top k \right)^3 = \sum \left( q^{\otimes 3} \right) \odot \left( k^{\otimes 3} \right) = \sum  (q \otimes q \otimes q) \odot (k \otimes k \otimes k)$:
+where $\odot$ denotes elementwise (Hadamard) product, and $x^{\otimes p}$ denotes tensor (outer) product of $x$ with itself $p$ times. For example, if $p = 3$, we have $\left( q^\top k \right)^3 = \sum \left( q^{\otimes 3} \right) \odot \left( k^{\otimes 3} \right) = \sum  (q \otimes q \otimes q) \odot (k \otimes k \otimes k)$:
 
 ```python
 import torch
