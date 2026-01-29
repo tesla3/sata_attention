@@ -38,7 +38,7 @@ torch.allclose(
     (q_tensorprod_3_times * k_tensorprod_3_times).sum())  # True
 ```
 
-The tensors $q^{\otimes p}$ and $k^{\otimes p}$ are _symmetric_, and their elementwise product, $\left( q^{\otimes p} \right) \odot \left( k^{\otimes p} \right) = \left( q \odot k \right)^{\otimes p}$, is also _symmetric_. The upper hyper-triangular region of each of these symmetric tensors contains its unique elements (analogous to the upper triangular region of a symmetric matrix).
+The tensors $q^{\otimes p}$ and $k^{\otimes p}$ are _symmetric_, and their elementwise product, $\left( q^{\otimes p} \right) \odot \left( k^{\otimes p} \right) = \left( q \odot k \right)^{\otimes p}$, is also _symmetric_. As our paper explains, the upper hyper-triangular region of each of these symmetric tensors contains its unique elements (analogous to a symmetric matrix's upper triangular region).
 
 By construction, $q^{\otimes p}$ and $k^{\otimes p}$ consist of all possible degree-$p$ monomials of $q$ and $k$, respectively, so the upper hyper-triangular region of these tensors constains the unique monomials that make up the _minimal basis_ for computing $(q^\top k)^p$. All monomials outside that region are permutations of a monomial in the region.
 
