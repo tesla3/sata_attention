@@ -1,6 +1,6 @@
 # sata_attention
 
-Proof-of-concept implementation of symmetry-aware Taylor-approximated attention, as proposed in "Self-Attention at Constant Cost per Token via Symmetry-Aware Taylor Expansion" (Heinsen and Kozachkov, 2026).
+Proof-of-concept implementation of symmetry-aware Taylor-approximated attention, as proposed in "[Self-Attention at Constant Cost per Token via Symmetry-Aware Taylor Expansion](paper.pdf)" (Heinsen and Kozachkov, 2026).
 
 We show that scaled dot-product attention is efficiently computable to arbitrary precision at constant cost per token, achieving orders-of-magnitude reductions in memory use and computation.
 
@@ -44,7 +44,7 @@ By construction, $q^{\otimes p}$ and $k^{\otimes p}$ consist of all possible deg
 
 The upper hyper-triangular region of an order $p$ symmetric tensor is indexed by $i_1 \le i_2 \le \dots \le i_p$, and consists of $m_p = \binom{d_K + p - 1}{p}$ elements, significantly fewer than ${d_K}^p$ in the full symmetric tensor.
 
-Our key contribution is a maximally succinct, computationally efficient, and embarrassingly parallel feed-forward transformation, shown as `Phi()` below, implementing a feature map $\Phi: \mathbb{R}^{d_K} \to \mathbb{R}^{m_p}$, that takes a query or key as input and returns the monomials in the order $p$ upper hyper-triangular region of the associated symmetric tensor, _i.e._, the minimal basis, _tightly packed in a vector_. We can then weight each basis monomial by a coefficient, equal to the corresponding number of possible permutations:
+Our key contribution is a maximally succinct, computationally efficient, and embarrassingly parallel feed-forward transformation, shown as `Phi()` below, implementing a feature map $\Phi_p: \mathbb{R}^{d_K} \to \mathbb{R}^{m_p}$, that takes a query or key as input and returns the monomials in the order $p$ upper hyper-triangular region of the associated symmetric tensor, _i.e._, the minimal basis, _tightly packed in a vector_. We can then weight each basis monomial by a coefficient, equal to the corresponding number of possible permutations:
 
 ```python
 from itertools import combinations_with_replacement
@@ -64,14 +64,14 @@ torch.allclose((q @ k) ** p, (Phi(q) * Phi(k) * C).sum())  # True
 
 Each row of matrix $M_p \in \mathbb{R}^{m_p \times p}$ (shown as `M` above) contains indices $i_1, i_2, \dots, i_p$, for $i_1 \le i_2 \le \dots \le i_p$, _i.e._, indices to the upper hyper-triangular region of an order $p$ symmetric tensor, sorted in ascending order. The space and time savings grow rapidly as we increase $p$. 
 
-We show in our paper how to apply `Phi()` as a kernel function in a form of linear attention, incurring constant cost per token, achieving orders-of-magnitude reductions in memory use and computation compared to the conventional formulation of attention. Notably, space and time complexity become inversely proportional to head size, making it cheaper to apply attention over a larger number of smaller heads.
+We show in our paper how to apply `Phi()` as the kernel function in a form of linear attention, incurring constant cost per token, achieving orders-of-magnitude reductions in memory use and computation compared to the conventional formulation of attention. Notably, space and time complexity become inversely proportional to head size, making it cheaper to apply attention over a larger number of smaller heads.
 
 This repository contains an implementation, along with code for verifying its correctness.
 
 
 ## Proof of Concept
 
-Our implementation is an initial one, and should properly be considered a proof of concept. Unlike implementations of the conventional formulation of attention, which has now benefited from nearly a decade of performance optimization work by a large community of AI researchers and practitioners, our formulation is new and has yet to benefit from comparable long-term work.
+_Our implementation is an initial one, and should properly be considered a proof of concept._ Unlike implementations of the conventional formulation of attention, which has now benefited from nearly a decade of performance optimization work by a large community of AI researchers and practitioners, our formulation is new and has yet to benefit from comparable long-term work.
 
 Targets for performance optimization include:
 
@@ -137,12 +137,14 @@ Note: Tested only on Linux; requires a GPU with at least 40GB of memory.
 
 ## Citing
 
+```
 @article{
 heinsenkozachkov2026attention,
 title={Self-Attention at Constant Cost per Token via Symmetry-Aware Taylor Expansion},
 author={Franz A. Heinsen and Leo Kozachkov},
 year={2026},
 }
+```
 
 
 ## Notes
