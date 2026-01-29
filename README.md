@@ -126,7 +126,7 @@ Y = attn(new_Q, new_K, new_V, continue_prev=True)  # constant cost per token
 
 ## Replicating Our Results
 
-We validate the correctness of formulation by applying our proof-of-concept implementation to sequences with up to 100M tokens. To replicate our results, install the dependencies listed in `replication_deps.txt` (e.g., `pip install -r replication_deps.txt`), and run the following from the command line:
+We validate the correctness of our formulation by applying our proof-of-concept implementation to sequences with up to 100M tokens. To replicate our results, install the dependencies listed in `replication_deps.txt` (e.g., `pip install -r replication_deps.txt`), and run the following from the command line:
 
 ```
 python replicate_results.py
