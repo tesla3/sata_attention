@@ -16,67 +16,59 @@ $$
 \exp \left( \frac{q^\top k}{c} \right)
 & = 1 + \frac{q^\top k}{c} + \frac{1}{2!} \left( \frac{q^\top k}{c} \right)^2 + \frac{1}{3!} \left( \frac{q^\top k}{c} \right)^3 + \dots \\
 \\
-& = \sum_{p=0}^{\infty}  \alpha_p  (q^\top k)^p, \qquad \alpha_p := \frac{1}{p! c^p} \\
+& = \sum_{p=0}^{\infty}  \alpha_p  \left( q^\top k \right)^p, \qquad \alpha_p := \frac{1}{p! c^p} \\
 \end{aligned}
-$$
+$$.
 
-Previous efforts to approximate attention via Taylor expansion have stopped at the quadratic term (_i.e._, second order) due to the perceived complexity of evaluating all necessary polynomial interactions for higher-degree terms. As we show in our paper, each term in the Taylor expansion decomposes into an expression over symmetric chains of tensor products. For example, $(q^\top k)^3$ decomposes as:
+Previous efforts to approximate attention via Taylor expansion have stopped at the quadratic term ($p = 2$) due to the perceived complexity of evaluating all necessary polynomial interactions for higher-degree terms. In our paper, we show that each term $\left( q^\top k \right)^p$ in the Taylor expansion decomposes into an expression over symmetric chains of tensor products:
 
 $$
-\begin{aligned}
-(q^\top k)^3
-& = \sum_{i_1=1}^{d_K} q_{i_1} k_{i_1} \sum_{i_2=1}^{d_K} q_{i_2} k_{i_2} \sum_{i_3=1}^{d_K} q_{i_3} k_{i_3} \\
-\\
-& = \sum_{i_1=1}^{d_K} \sum_{i_2=1}^{d_K} \sum_{i_3=1}^{d_K} (q_{i_1} q_{i_2} q_{i_3}) (k_{i_1} k_{i_2} k_{i_3}) \\
-\\
-& = \sum  (q \otimes q \otimes q) \odot (k \otimes k \otimes k) \\
-\\
-& = \sum \left( q^{\otimes 3} \right) \odot \left( k^{\otimes 3} \right)
-\end{aligned}
-$$
+\left( q^\top k \right)^p = \sum \left( q^{\otimes p} \right) \odot \left( k^{\otimes p} \right)
+$$.
 
-where $\odot$ denotes elementwise (Hadamard) product and $\otimes$ denotes tensor (outer) product. In code:
+For example, if $p = 3$, we have $\left( q^\top k \right)^3 = \sum \left( q^{\otimes 3} \right) \odot \left( k^{\otimes 3} \right) = \sum  (q \otimes q \otimes q) \odot (k \otimes k \otimes k)$. In code:
 
 ```python
 import torch
 
-d_key = 4  # toy example
+d_key = 4                     # toy example
+q, k = torch.randn(2, d_key)  # key, query
 
-q = torch.randn(4)
-k = torch.randn(4)
-print((q @ k) ** 3)
+q_tensorprod_3_times = torch.einsum('i,j,k->ijk', q, q, q)  # symmetric
+k_tensorprod_3_times = torch.einsum('i,j,k->ijk', k, k, k)  # symmetric
 
-q_tensorprod_3_times = torch.einsum('i,j,k->ijk', q, q, q)  # shape is d_key x d_key x d_key
-k_tensorprod_3_times = torch.einsum('i,j,k->ijk', k, k, k)  # shape is d_key x d_key x d_key
-print(torch.sum(q_tensorprod_3_times * k_tensorprod_3_times))  # same output
+torch.allclose(
+    (q @ k) ** 3,
+    (q_tensorprod_3_times * k_tensorprod_3_times).sum())  # True
 ```
 
-The tensors $q^{\otimes 3}$ and $k^{\otimes 3}$ are _symmetric_, and their elementwise product, $\left( q^{\otimes 3} \right) \odot \left( k^{\otimes 3} \right) = \left( q \odot k \right)^{\otimes 3}$, is also _symmetric_. As we show in our paper, the upper hyper-triangular region of each of these symmetric tensors contains its unique elements (analogous to the upper triangular region of a symmetric matrix).
+The tensors $q^{\otimes p}$ and $k^{\otimes p}$ are _symmetric_, and their elementwise product, $\left( q^{\otimes p} \right) \odot \left( k^{\otimes p} \right) = \left( q \odot k \right)^{\otimes p}$, is also _symmetric_. The upper hyper-triangular region of each of these symmetric tensors contains its unique elements (analogous to the upper triangular region of a symmetric matrix).
 
-By construction, $q^{\otimes 3}$ and $k^{\otimes 3}$ consist of all possible degree-3 monomials of $q$ and $p$, respectively, so their upper hyper-triangular region has the unique monomials that make up the _minimal basis_ for computing $(q^\top k)^3$. All monomials outside that region are permutations of a monomial in the region.
+By construction, $q^{\otimes p}$ and $k^{\otimes p}$ consist of all possible degree-$p$ monomials of $q$ and $k$, respectively, so the upper hyper-triangular region of these tensors constains the unique monomials that make up the _minimal basis_ for computing $(q^\top k)^p$. All monomials outside that region are permutations of a monomial in the region.
 
-The upper hyper-triangular region of an order-3 symmetric tensor is indexed by $i_1 \le i_2 \le i_3$, and consists of $m_3 = \binom{d_K + 3 - 1}{3}$ elements, significantly fewer than $d_K \times d_K \times d_K = {d_K}^3$ in the full tensor.
+The upper hyper-triangular region of an order-$p$ symmetric tensor is indexed by $i_1 \le i_2 \le \dots \le i_p$, and consists of $m_p = \binom{d_K + p - 1}{p}$ elements, significantly fewer than ${d_K}^p$ in the full symmetric tensor.
 
-Our key contribution is a maximally succinct, computationally efficient, and embarrassingly parallel feed-forward transformation, shown as `Phi()` below, that maps queries and keys to the minimal basis for computing each Taylor term, tightly packed in a vector, reducing space and time costs by orders of magnitude compared to a naive evaluation over the full symmetric tensors:
+Our key contribution is a maximally succinct, computationally efficient, and embarrassingly parallel feed-forward transformation, shown as `Phi()` below, implementing a feature map $\Phi: \mathbb{R}^{d_K} \to \mathbb{R}^{m_p}$, that maps a query or key to the monomials in the order-$p$ upper hyper-triangular region, _i.e._, the minimal basis, _tightly packed in a vector_. We can then weight each basis monomial by its coefficient, equal to the corresponding number of permutations in the full symmetric tensor:
 
 ```python
 from itertools import combinations_with_replacement
 from sata_attention import _calculate_n_idx_permutations
 
-p = 3  # order of tensors (degree of polynomials)
+p = 3  # order of tensors (degree of Taylor term)
 
-# Constants (can be precomputed only once, in advance):
-M = torch.tensor([*combinations_with_replacement(range(d_key), p)])  # idxs to unique monoms
-C = _calculate_n_idx_permutations(M, d_key)                          # counts in full tensor
+# Constants (precomputed only once, in advance):
+M = torch.tensor([*combinations_with_replacement(range(d_key), p)])  # idxs to monomial basis
+C = _calculate_n_idx_permutations(M, d_key)                          # coefficients
 
-def Phi(x): return x[..., M].prod(dim=-1)  # proposed feed-forward transformation
+# Proposed feed-forward transformation:
+def Phi(x): return x[..., M].prod(dim=-1)
 
-print(torch.sum(Phi(q) * Phi(k) * C))      # same output as before
+torch.allclose((q @ k) ** p, (Phi(q) * Phi(k) * C).sum())  # True
 ```
 
-We show in our paper how to apply `Phi()` as a kernel function in a form of linear attention, incurring constant cost per token. Notably, space and time complexity becomes inversely proportional to head size, making it cheaper to apply attention over a larger number of smaller heads.
+As we increase $p$, the space and time savings increase by orders of magnitude compared to a naive evaluation of the full symmetric tensors. Each row of constant matrix $M_p \in \mathbb{R}^{m_p \times p}$ (shown as `M` above) contains indices $i_1, i_2, \dots, i_p$, for $i_1 \le i_2 \le \dots \le i_p$ (_i.e._, indices to the upper hyper-triangular region), sorted in ascending order.
 
-This repository contains an implementation of attention, approximated via Taylor expansion using our method, along with code for verifying its correctness.
+We show in our paper how to apply `Phi()` as a kernel function in a form of linear attention, incurring constant cost per token. Notably, space and time complexity becomes inversely proportional to head size, making it cheaper to apply attention over a larger number of smaller heads. This repository contains an implementation, along with code for verifying its correctness.
 
 
 ## Proof of Concept
@@ -85,15 +77,15 @@ Our implementation is an initial one, and should properly be considered a proof 
 
 Targets for performance optimization include:
 
-**Unnecessary Temporary Copying of Query and Key Elements**: _Currently, we make $m_p \times p$ temporary copies of elements from each query and key vector, instead of pointing to those elements, for mapping the vector to $m_p$ monomial features._ This is because the Python expression `x[..., M]` returns *copies* of `x`'s elements, instead of views. Copying elements increases temporary memory use, and can also saturate memory bandwidth, impacting performance. In principle, copying all that data is unnecessary.
+**Unnecessary Temporary Copying of Query and Key Elements**: Currently, we make $m_p \times p$ temporary copies of elements from each query and key vector, instead of pointing to those elements, for mapping the vector to $m_p$ monomial features. This is because the Python expression `x[..., M]` returns *copies* of `x`'s elements, _not views_. (Recall that matrix `M`, properly $M_p$, consists of $m_p \times p$ indices.) Copying all those elements increases temporary memory use, and can also saturate memory bandwidth, holding back performance. In principle, copying all that data is unnecessary.
 
-**Absence of Optimizations that Exploit Hierarchical Structure of Symmetric Indices**: _Currently, we do not exploit the structure of the indices stored in  matrix $M_p$._ Each row of $M_p$ contains indices $i_1, i_2, \dots, i_p$ organized hierarchically by $i_1 \le i_2 \le \dots \le i_p$, opening additional opportunities for improving computational efficiency. In principle, it should be possible to exploit hierarchical structure to reduce memory and compute use.
+**Absence of Optimizations that Exploit Hierarchical Structure of Symmetric Indices**: Currently, we do not exploit the hierarchical structure of the indices stored in matrix $M_p$. It's not hard to show that for each $p > 0$, each row of $M_{p-1}$ is a partial row of one or more rows of $M_p$, which opens additional opportunities for improving computational efficiency. In principle, it should be possible to exploit the hierarchical structure of the index matrices to reduce memory and compute use.
 
-**Sequential Instead of Parallel Evaluation of Taylor Terms**: _Currently, we evaluate Taylor Terms sequentially, instead of in parallel_. We queue them on a single stream on an Nvidia GPU. As we discuss in our paper, Taylor terms can be evaluated in parallel, because they are independent of each other.
+**Sequential Instead of Parallel Evaluation of Taylor Terms**: Currently, we evaluate Taylor Terms sequentially, instead of in parallel. We queue them on a single stream on an Nvidia GPU. As we discuss in our paper, Taylor terms can be evaluated in parallel, because they are independent of each other.
 
-**Absence of Common On-Device Optimizations**: _Currently, our focus is on validating the correctness of our formulation, not on developing a high-performance implementation._ A more efficient implementation requires writing low-level on-device code (_e.g._, a fused CUDA kernel for Nvidia GPUs) that carefully handles data, both to avoid unnecessarily making temporary copies of it, and to ensure it is more frequently on faster-access memory (_e.g._, HBM instead of SRAM on Nvidia GPUs) as needed for computation.
+**Absence of Common On-Device Optimizations**: Currently, our focus is on validating the correctness of our formulation, not on developing a high-performance implementation. A more efficient implementation requires writing low-level on-device code (_e.g._, a fused CUDA kernel for Nvidia GPUs) that carefully handles data, both to avoid unnecessarily making temporary copies of it, and to ensure it is more frequently on faster-access memory (_e.g._, HBM instead of SRAM on Nvidia GPUs) as needed for computation.
 
-**Absence of Additional Performance Optimizations**: _Currently, we have not explored any additional performance optimizations._ They include the possibility of reducing the dimensionality of higher-order feature spaces (say, for order greater than four) by applying conventional techniques, such as dropping basis components with low-magnitude coefficients, finding best-fit lower-rank basis approximations, and obtaining fast approximations of the basis via random sampling or random projections.
+**Absence of Additional Performance Optimizations**: Currently, we have not explored any additional performance optimizations. They include the possibility of reducing the dimensionality of higher-order feature spaces (say, for order greater than four) by applying conventional techniques, such as dropping basis components with low-magnitude coefficients, finding best-fit lower-rank basis approximations, and obtaining fast approximations of the basis via random sampling or random projections. Also, many methods for improving the space and time efficiency of the conventional formulation of attention can benefit our formulation too (_e.g._, data and parameter reuse schemes).
 
 
 ## Installation
@@ -111,7 +103,7 @@ from sata_attention import SymmetryAwareTaylorApproximatedAttention
 
 DEVICE = 'cuda'  # change as needed
 
-n_tok, d_key, d_val = (3, 32, 32)
+n_tok, d_key, d_val = (3, 64, 64)
 
 attn = SymmetryAwareTaylorApproximatedAttention(d_key, d_val, is_causal=True, n_taylor=4)
 attn = attn.to(DEVICE)
@@ -123,7 +115,7 @@ V = torch.randn(n_tok, d_val, device=DEVICE)
 Y = attn(Q, K, V)
 ```
 
-Given a new token, you can compute a attention at constant cost per token with:
+Given a new token, you can compute attention at constant cost per token with:
 
 ```python
 new_Q = torch.randn(1, d_key, device=DEVICE)
@@ -136,10 +128,25 @@ Y = attn(new_Q, new_K, new_V, continue_prev=True)  # constant cost per token
 
 ## Replicating Our Results
 
-We validate the correctness of formulation by applying our proof-of-concept implementation to sequences with up to 100M tokens. To replicate our results, install the dependencies listed in `requirements.txt` (e.g., `pip install -r requirements.txt`), and run the following from the command line:
+We validate the correctness of formulation by applying our proof-of-concept implementation to sequences with up to 100M tokens. To replicate our results, install the dependencies listed in `replication_deps.txt` (e.g., `pip install -r replication_deps.txt`), and run the following from the command line:
 
 ```
 python replicate_results.py
 ```
 
-Notes: Tested only on Linux. Requires a GPU with at least 40GB of RAM.
+Note: Tested only on Linux; requires a GPU with at least 40GB of memory.
+
+
+## Citing
+
+@article{
+heinsenkozachkov2026attention,
+title={Self-Attention at Constant Cost per Token via Symmetry-Aware Taylor Expansion},
+author={Franz A. Heinsen and Leo Kozachkov},
+year={2026},
+}
+
+
+## Notes
+
+We hope others find our work and our code useful.
