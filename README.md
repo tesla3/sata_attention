@@ -18,7 +18,7 @@ $$\begin{aligned}
 
 Previous efforts to approximate attention via Taylor expansion have stopped at the quadratic term ($p = 2$) due to the perceived complexity of evaluating all necessary polynomial interactions for higher-degree terms.
 
-In our paper, we show that each term $\left( q^\top k \right)^p$ in the Taylor expansion decomposes into an expression over symmetric chains of tensor products:
+In our paper, we show that the Taylor expansion decomposes into an expression over symmetric chains of tensor products, and their symmetric structure naturally reveals the minimal basis for all polynomial interactions. Concretely, for every $p$ in the Taylor expansion, we show that
 
 $$\left( q^\top k \right)^p = \sum \left( q^{\otimes p} \right) \odot \left( k^{\otimes p} \right)$$
 
