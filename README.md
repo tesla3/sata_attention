@@ -11,20 +11,16 @@ Our work enables unbounded token generation at modest fixed cost, opening a new 
 
 The core operation of scaled dot-product attention is exponentiation of a query-key dot-product. Given query and key vectors $q, k \in \mathbb{R}^{d_K}$ and a conventional constant $c = \sqrt{d_K}$, the core operation's Taylor expansion is:
 
-$$
-\begin{aligned}
+$$\begin{aligned}
 \exp \left( \frac{q^\top k}{c} \right)
 & = 1 + \frac{q^\top k}{c} + \frac{1}{2!} \left( \frac{q^\top k}{c} \right)^2 + \frac{1}{3!} \left( \frac{q^\top k}{c} \right)^3 + \dots \\
 \\
 & = \sum_{p=0}^{\infty}  \alpha_p  \left( q^\top k \right)^p, \qquad \alpha_p := \frac{1}{p! c^p} \\
-\end{aligned}
-$$.
+\end{aligned}$$
 
 Previous efforts to approximate attention via Taylor expansion have stopped at the quadratic term ($p = 2$) due to the perceived complexity of evaluating all necessary polynomial interactions for higher-degree terms. In our paper, we show that each term $\left( q^\top k \right)^p$ in the Taylor expansion decomposes into an expression over symmetric chains of tensor products:
 
-$$
-\left( q^\top k \right)^p = \sum \left( q^{\otimes p} \right) \odot \left( k^{\otimes p} \right)
-$$.
+$$\left( q^\top k \right)^p = \sum \left( q^{\otimes p} \right) \odot \left( k^{\otimes p} \right)$$
 
 For example, if $p = 3$, we have $\left( q^\top k \right)^3 = \sum \left( q^{\otimes 3} \right) \odot \left( k^{\otimes 3} \right) = \sum  (q \otimes q \otimes q) \odot (k \otimes k \otimes k)$. In code:
 
