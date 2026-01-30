@@ -20,13 +20,13 @@ Previous efforts to approximate attention via Taylor expansion have stopped at t
 
 In our paper, we show that the Taylor expansion decomposes into an expression over symmetric chains of tensor products, and their symmetric structure naturally reveals the minimal basis for all necessary polynomial interactions, enabling us to find an efficient method for computing them.
 
-Concretely, for every $p$ in the Taylor expansion, we show that $\left( q^\top k \right)^p = \sum \left( q^{\otimes p} \right) \odot \left( k^{\otimes p} \right)$, where $\odot$ denotes elementwise (Hadamard) product, and $x^{\otimes p}$ denotes tensor (outer) product of $x$ with itself $p$ times. For example, if $p = 3$, we have $\left( q^\top k \right)^3 = \sum \left( q^{\otimes 3} \right) \odot \left( k^{\otimes 3} \right) = \sum  (q \otimes q \otimes q) \odot (k \otimes k \otimes k)$:
+Concretely, for every $p$ in the Taylor expansion, we show that $\left( q^\top k \right)^p = \sum \left( q^{\otimes p} \right) \odot \left( k^{\otimes p} \right)$, where $\odot$ denotes elementwise (Hadamard) product, and $x^{\otimes p}$ denotes tensor (outer) product of $x$ with itself $p$ times. For example, when $p = 3$, we have $\left( q^\top k \right)^3 = \sum \left( q^{\otimes 3} \right) \odot \left( k^{\otimes 3} \right) = \sum  (q \otimes q \otimes q) \odot (k \otimes k \otimes k)$:
 
 ```python
 import torch
 
 d_key = 4                     # toy example
-q, k = torch.randn(2, d_key)  # key, query
+q, k = torch.randn(2, d_key)  # query, key
 
 q_tensorprod_3_times = torch.einsum('i,j,k->ijk', q, q, q)  # symmetric
 k_tensorprod_3_times = torch.einsum('i,j,k->ijk', k, k, k)  # symmetric
@@ -38,7 +38,7 @@ torch.allclose(
 
 The tensors $q^{\otimes p}$ and $k^{\otimes p}$ are _symmetric_, and their elementwise product, $\left( q^{\otimes p} \right) \odot \left( k^{\otimes p} \right) = \left( q \odot k \right)^{\otimes p}$, is also _symmetric_. As our paper explains, the upper hyper-triangular region of each of these symmetric tensors contains its unique elements (analogous to a symmetric matrix's upper triangular region).
 
-By construction, $q^{\otimes p}$ and $k^{\otimes p}$ consist of all possible degree $p$ monomials of $q$ and $k$, respectively, so the upper hyper-triangular regions of these two symmetric tensors contain the unique monomials of elements of $q$ and $p$, respectively, that make up the _minimal basis_ for computing $(q^\top k)^p$. _All monomials outside each upper hyper-triangular region are permutations of a monomial in the region._
+By construction, $q^{\otimes p}$ and $k^{\otimes p}$ consist of all possible degree $p$ monomials of $q$ and $k$, respectively, so the upper hyper-triangular regions of these two symmetric tensors contain the unique monomials combining elements of $q$ and $p$, respectively, that make up the _minimal basis_ for computing $(q^\top k)^p$. _All monomials outside each upper hyper-triangular region are permutations of a monomial in the region._
 
 The upper hyper-triangular region of an order $p$ symmetric tensor is indexed by $i_1 \le i_2 \le \dots \le i_p$, and consists of $m_p = \binom{d_K + p - 1}{p}$ elements, significantly fewer than ${d_K}^p$ in the full symmetric tensor.
 
@@ -60,7 +60,7 @@ def Phi(x): return x[..., M].prod(dim=-1)
 torch.allclose((q @ k) ** p, (Phi(q) * Phi(k) * C).sum())  # True
 ```
 
-Each row of matrix $M_p \in \mathbb{R}^{m_p \times p}$ (`M` above) contains the indices to the upper hyper-triangular region of an order $p$ symmetric tensor, sorted in ascending order. Each coefficient in $C_p$ (`C` above) scales a monomial in the region. For $p = 0$, $M_0$ is an empty matrix, $C_0 = 1$, and $\Phi_0(\cdot) = 1$, which we handle as a special case in PyTorch. The space and time savings grow rapidly as we increase $p$.
+Each row of matrix $M_p \in \{ 1, 2, \dots, d_K \}^{m_p \times p}$ (`M`, above) contains the indices to the upper hyper-triangular region of an order $p$ symmetric tensor, sorted in ascending order. Each coefficient in $C_p$ (`C`, above) scales a monomial in the region. For $p = 0$, $M_0$ is an empty matrix, $C_0 = 1$, and $\Phi_0(\cdot) = 1$, which we handle as a special case in PyTorch. The space and time savings grow rapidly as we increase $p$.
 
 We show in our paper how to apply `Phi()` as the kernel function in a form of linear attention, incurring constant cost per token, achieving orders-of-magnitude reductions in memory use and computation compared to the conventional formulation of attention. Notably, space and time complexity become inversely proportional to head size, making it cheaper to apply attention over a larger number of smaller heads.
 
