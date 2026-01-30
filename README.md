@@ -4,6 +4,9 @@ Reference implementation of "[Self-Attention at Constant Cost per Token via Symm
 
 We show that scaled dot-product attention is efficiently computable to arbitrary precision at constant cost per token, _achieving orders-of-magnitude reductions in memory use and computation compared to the conventional formulation_. Our work enables unbounded token generation at modest fixed cost, for substantially reducing the infrastructure and energy demands of large-scale Transformer models.
 
+![Symmetric tensors illustration](images/symmetric_tensors.png)
+
+
 
 ## Key Insight
 
