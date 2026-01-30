@@ -22,7 +22,7 @@ class TightlyPackedTaylorTerm(torch.nn.Module):
     """
     Proof-of-concept implementation of tightly packed Taylor numerator and
     denominator terms, as proposed "Self-Attention at Constant Cost per Token
-    via Symmetry-Aware Taylor Expansion," (Heinsen and Kozachkov, 2026).
+    via Symmetry-Aware Taylor Approximation" (Heinsen and Kozachkov, 2026).
 
     Args:
         d_key: int, number of elements per head in queries and keys.
@@ -103,7 +103,7 @@ class TightlyPackedTaylorTerm(torch.nn.Module):
 class SymmetryAwareTaylorApproximatedAttention(torch.nn.Module):
     """
     Proof-of-concept implementation of "Self-Attention at Constant Cost per
-    Token via Symmetry-Aware Taylor Expansion," (Heinsen and Kozachkov, 2026).
+    Token via Symmetry-Aware Taylor Approximation" (Heinsen and Kozachkov, 2026).
 
     Args:
         d_key: int, number of elements per head in queries and keys.

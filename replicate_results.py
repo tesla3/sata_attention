@@ -18,9 +18,9 @@ from sata_attention import SymmetryAwareTaylorApproximatedAttention
 
 DEVICE = 'cuda'  # must be a cuda device
 torch.fx.experimental._config.use_duck_shape = False  # prevents recompilations as sizes change
-torch._dynamo.config.cache_size_limit = 32  # caches more recompiliations to handle greater data variation
+torch._dynamo.config.cache_size_limit = 32  # caches more recompilations to handle greater data variation
 
-SACRIFICE_PRECISION_FOR_FASTER_EXECUTION = False  # does not impact *relative* run time or mem use in our tests
+SACRIFICE_PRECISION_FOR_FASTER_EXECUTION = False  # note: does not impact *relative* run time or mem use in our tests
 torch.backends.cuda.matmul.allow_tf32 = SACRIFICE_PRECISION_FOR_FASTER_EXECUTION
 torch.backends.cudnn.allow_tf32 = SACRIFICE_PRECISION_FOR_FASTER_EXECUTION
 torch.backends.cuda.matmul.allow_fp16_reduced_precision_reduction = SACRIFICE_PRECISION_FOR_FASTER_EXECUTION
@@ -35,26 +35,25 @@ BENCHMARK_DATA_PATH = 'benchmark_data.pt'
 DEFAULT_N_TAYLOR = 4
 DEFAULT_DATA_DTYPE = torch.float16
 
-N_TAYLOR_LIST = range(1, 8 + 1)
-P_LIST = [n_taylor - 1 for n_taylor in N_TAYLOR_LIST]
-D_HEAD_LIST = [8, 16, 32, 64]
+N_TAYLOR_LIST = range(1, 8 + 1)                        # number of Taylor terms to test
+P_LIST = [n_taylor - 1 for n_taylor in N_TAYLOR_LIST]  # power (degree) of each Taylor term
+D_HEAD_LIST = [8, 16, 32, 64]                          # head sizes to try
 N_TOK_LIST = sorted(set(
     (math.floor(10 ** i) // 64 + 1) * 64
-    for i in np.linspace(3, 8, 100)
-))  # approx 10**3 to 10**8, in multiples of 64
+    for i in np.linspace(3, 8, 100) ))                 # approx 10**3 to 10**8, in multiples of 64
 
-N_TAYLOR_LIST_FOR_RECONSTRUCTION_ERROR = [3, 4, 5, 6]
-N_TOK_FOR_MEASURING_RECONSTRUCTION_ERROR = 100 * 1024
-CHUNK_SZ_FACTOR_FOR_RECONSTRUCTION_ERROR = 2  # integer >= 1, multiplies memory footprint of reconstructions
+N_TOK_FOR_MEASURING_RECONSTRUCTION_ERROR = 100 * 1024  # will measure reconstruction error for every token (slow)
+N_TAYLOR_LIST_FOR_RECONSTRUCTION_ERROR = [3, 4, 5, 6]  # number of Taylor terms to test for reconstruction
+CHUNK_SZ_FACTOR_FOR_RECONSTRUCTION_ERROR = 2           # integer >= 1, multiplies memory footprint of reconstructions
 
 FIG_DPI = 300
 plt.rcParams['mathtext.fontset'] = 'cm'
 
 
-# Code for conventional Attention(Q, K, V)
+# Bare-bones implementation of conventional attention. Feel free to replace with your own!
 
-class ConventionalAttention(torch.nn.Module):
-    "Minimal implementation of conventional dot-product attention."
+class BarebonesConventionalAttention(torch.nn.Module):
+    "Minimal implementation of conventional scaled dot-product attention."
 
     def __init__(self, is_causal):
         super().__init__()
@@ -93,12 +92,13 @@ def benchmark_flops_per_tok_vs_conventional():
     print('---\nBenchmarking FLOPs per token vs. conventional attention.')
     print('Evaluating sequences of up to 10**{:.0f} tokens.'.format(math.log10(max(N_TOK_LIST))))
 
-    # We measure FLOPs/token only for Attention(Q, K V), not for the feed-forward layers before/after.
+    # We measure FLOPs *per token*, not per sequence.
+    # We measure FLOPs only for Attention(Q, K V), not for anything else.
     # We assume queries, keys, and values have already been computed.
 
     def _old_attn_forward_flops(n_qry, n_tok, d_head, n_heads):
         # For conventional attention, we measure FLOPs w/method from DeepMind's Scaling Laws/Chinchilla paper
-        # See https://www.adamcasson.com/posts/transformer-flops
+        # (https://arxiv.org/abs/2203.15556). See also https://www.adamcasson.com/posts/transformer-flops
         flops_qk_logits = 2 * n_qry * n_tok * d_head * n_heads
         flops_softmax = 2 * n_qry * n_tok * d_head * n_heads
         flops_reduction = 2 * n_qry * n_tok * d_head * n_heads
@@ -150,7 +150,7 @@ def benchmark_mem_use_per_tok_vs_conventional():
     torch._dynamo.config.cache_size_limit = 32
 
     # Instantiate conventional attention:
-    old_attn = ConventionalAttention(is_causal=False)
+    old_attn = BarebonesConventionalAttention(is_causal=False)
     old_attn = torch.compile(old_attn, dynamic=True)
     old_attn.eval()
 
@@ -208,7 +208,7 @@ def benchmark_run_time_per_tok_vs_conventional():
     print('Lazily compiling all modules.')
 
     # Instantiate conventional attention:
-    old_attn = ConventionalAttention(is_causal=False)
+    old_attn = BarebonesConventionalAttention(is_causal=False)
     old_attn = torch.compile(old_attn, dynamic=True)
     old_attn.eval()
 
@@ -263,7 +263,7 @@ def benchmark_reconstruction_error_vs_conventional():
     print(f'Applying self-attention to sequences of {n_tok // 1024}K tokens (in chunks to limit memory use).')
 
     # Instantiate conventional attention:
-    old_attn = ConventionalAttention(is_causal=True)
+    old_attn = BarebonesConventionalAttention(is_causal=True)
     old_attn.eval()
 
     max_d_head = max(D_HEAD_LIST)
