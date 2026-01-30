@@ -526,6 +526,7 @@ def generate_and_save_figs_reconstruction_error_vs_conventional(benchmark_data):
         axes[row_num, 0].set_ylabel(r'$\log_{10} | Y - \hat{Y} |$', fontsize=12)
 
     fig.savefig('fig_reconstruction_error_by_token_position_vs_conventional.png', dpi=FIG_DPI)
+    plt.close(fig)
 
 
 # Code for calling all functions
