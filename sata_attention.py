@@ -75,8 +75,8 @@ class TightlyPackedTaylorTerm(torch.nn.Module):
                 H_S = self.prev_H_S + H_S                                    # [..., (n_qry or 1), m, d_val]
                 H_Z = self.prev_H_Z + H_Z                                    # [..., (n_qry or 1), m, 1]
 
-            S_term = H_S.squeeze(-2)                                         # [..., (n_qry or 1), d_val]
-            Z_term = H_Z.squeeze(-2)                                         # [..., (n_qry or 1), 1]
+            S_term = H_S.squeeze(-2).expand(*Q.shape[:-1], -1)               # [..., n_qry, d_val]
+            Z_term = H_Z.squeeze(-2).expand(*Q.shape[:-1], -1)               # [..., n_qry, 1]
         else:
             Phi_Q = self.Phi(Q)                                              # [..., n_qry, m]
             Phi_K = self.Phi(K)                                              # [..., n_tok, m]
