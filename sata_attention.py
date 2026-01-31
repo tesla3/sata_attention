@@ -57,7 +57,7 @@ class TightlyPackedTaylorTerm(torch.nn.Module):
     def Phi(self, x):
         return x[..., self.M].prod(dim=-1)  # note: x[..., self.M] returns *copies*, not views
 
-    def forward(self, Q: torch.Tensor, K: torch.Tensor, V: torch.Tensor, continue_prev: bool):
+    def forward(self, Q: torch.Tensor, K: torch.Tensor, V: torch.Tensor, continue_prev: bool) -> tuple[torch.Tensor, torch.Tensor]:
         assert Q.size(-1) == K.size(-1) and K.size(-2) == V.size(-2), (
             "Input shapes are incompatible. See docstring for required input shapes.")
         if self.is_causal:
