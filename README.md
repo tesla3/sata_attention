@@ -95,6 +95,13 @@ Targets for performance optimization include:
 **Absence of Additional Performance Optimizations**: Currently, we have not explored any additional performance optimizations. They include the possibility of reducing the dimensionality of higher-order feature spaces (say, for order greater than four) by applying conventional techniques, such as dropping basis components with low-magnitude coefficients, finding best-fit lower-rank basis approximations, and obtaining fast approximations of the basis via random sampling or random projections. Also, many methods for improving the space and time efficiency of the conventional formulation of attention can benefit our formulation too (_e.g._, data and parameter reuse schemes).
 
 
+## Next Steps
+
+Several directions for future work follow naturally. An important next step is to train Transformer models,
+end-to-end and via transfer learning, applying our formulation of attention, and evaluate downstream
+performance and convergence behavior. Ideally, such evaluations should include _new model configurations that compute attention over more heads than previously feasible_, by reducing the size of each head, because our formulation is most favorable to smaller heads. Performing such evaluations at any meaningful scale will require _development of fused hardware kernels that target the performance issues we mention above_. Further opportunities for work include compressing higher-order feature spaces and extending our approach to other analytic kernels beyond the exponential.
+
+
 ## Installation
 
 Clone the repository, or download a single file: `sata_attention.py`.
