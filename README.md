@@ -11,7 +11,7 @@ from sata_attention import SymmetryAwareTaylorApproximatedAttention
 
 DEVICE = 'cuda'             # change as needed
 n_tok = 1_000_000_000       # 1B tokens, no problem!
-n_head, d_head = (1048, 8)  # 1K small heads per token, no problem!
+n_head, d_head = (1024, 8)  # 1K small heads per token, no problem!
 n_taylor = 8                # 8 Taylor terms, no problem!
 
 attn = SymmetryAwareTaylorApproximatedAttention(
