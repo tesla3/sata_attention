@@ -22,7 +22,8 @@ for tok_num in tqdm(range(n_tok)):
     y = attn(q, k, v)                                           # attn over trailing toks
 ```
 
-Important: This implementation is an initial proof of concept lacking many optimizations, not meant for use in production. Please read on for details.
+Important: This implementation is an initial proof of concept lacking many optimizations. Its main purpose is to validate the correctness of our mathematical derivations. Please read on before using it.
+
 
 
 ## Key Insight
