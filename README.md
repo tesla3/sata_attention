@@ -15,7 +15,7 @@ n_head, d_head = (1024, 8)  # 1K small heads per token, no problem!
 n_taylor = 8                # 8 Taylor terms, no problem!
 
 attn = SymmetryAwareTaylorApproximatedAttention(
-    d_key=d_head, d_val=d_head, is_causal=True, n_taylor=8).to(DEVICE)
+    d_key=d_head, d_val=d_head, is_causal=True, n_taylor=n_taylor).to(DEVICE)
 
 for tok_num in tqdm(range(n_tok)):
     q, k, v = torch.randn(3, n_head, 1, d_head, device=DEVICE)  # new query, key, value
