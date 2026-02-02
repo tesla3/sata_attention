@@ -2,7 +2,27 @@
 
 Reference implementation of "[Self-Attention at Constant Cost per Token via Symmetry-Aware Taylor Approximation](paper.pdf)" (Heinsen and Kozachkov, 2026).
 
-We show that scaled dot-product attention is efficiently computable to arbitrary precision at constant cost per token, _achieving orders-of-magnitude reductions in memory use and computation compared to the conventional formulation_. Our work enables unbounded token generation at modest fixed cost, for substantially reducing the infrastructure and energy demands of large-scale Transformer models.
+We show that scaled dot-product attention is efficiently computable to arbitrary precision at constant cost per token, _achieving orders-of-magnitude reductions in memory use and computation compared to the conventional formulation_. Our work enables unbounded token generation at modest fixed cost, for substantially reducing the infrastructure and energy demands of large-scale Transformer models:
+
+```python
+import torch            # you must install
+from tqdm import tqdm   # you must install
+from sata_attention import SymmetryAwareTaylorApproximatedAttention
+
+DEVICE = 'cuda'             # change as needed
+n_tok = 1_000_000_000       # 1B tokens, no problem!
+n_head, d_head = (1048, 8)  # 1K small heads per oken, no problem!
+
+attn = SymmetryAwareTaylorApproximatedAttention(
+    d_key=d_head, d_val=d_head, is_causal=True, n_taylor=8)     # 8 Taylor terms, no problem!
+attn = attn.to(DEVICE)
+
+for tok_num in tqdm(range(n_tok)):
+    q, k, v = torch.randn(3, n_head, 1, d_head, device=DEVICE)  # new query, key, value
+    y = attn(q, k, v)                                           # attn over trailing toks
+```
+
+Important: This implementation is an initial proof of concept lacking many optimizations, not meant for use in production. Please read on for details.
 
 
 ## Key Insight
